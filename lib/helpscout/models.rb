@@ -15,6 +15,30 @@ module HelpScout
   #
   # The Help Scout API will return one of three envelopes, depending upon the 
   # request issued.
+
+  class Tag
+    attr_reader :id, :tag
+    
+    def initialize(object)
+      @id = object["user"]
+      @tag = object["tag"]
+    end
+
+    def to_s
+      @tag
+    end
+  end  
+
+
+  class UserReportEnvelop
+    attr_reader :user, :filterTags, :current
+    
+    def initialize(object)
+      @user = object["user"]
+      @filterTags = object["filterTags"]
+      @current = object["current"]
+    end
+  end
   
   # Single Item Envelope
   class SingleItemEnvelope

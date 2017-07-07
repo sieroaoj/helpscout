@@ -47,6 +47,70 @@ module HelpScout
 
     @@settings ||= nil
 
+
+
+    def self.request_user_report(auth, url, params = {})
+      item = nil
+
+      request_url = ""
+      request_url << url
+      if params
+        query = ""
+        params.each { |k,v| query += "#{k}=#{v}&" }
+        request_url << "?" + query
+      end
+
+      begin
+        response = Client.get(request_url, {:basic_auth => auth})
+      rescue SocketError => se
+        raise StandardError, se.message
+      end
+
+      if 200 <= response.code && response.code < 300
+        #puts response
+        envelope = UserReportEnvelop.new(response)
+
+      elsif 400 <= response.code && response.code < 500
+        if response["message"]
+          envelope = ErrorEnvelope.new(response)
+          raise StandardError, envelope.message
+        else
+          raise StandardError, response["error"]
+        end
+      else
+        raise StandardError, "Server Response: #{response.code}"
+      end
+      envelope
+  end
+
+
+
+    def tags
+      url = "/tags.json"
+      items = Client.request_items(@auth, url, :page => 1)
+      tags = []
+      items.each do |item|
+        tags << Tag.new(item)
+      end
+      tags
+    end
+
+
+
+
+    def get_user_report(user, tstart, tend)
+        url = "/reports/user.json"
+        user_report = Client.request_user_report(@auth, url, :user => user.id, :start=>tstart,:end=>tend)
+        # users = []
+        # items.each do |item|
+        #   users << User.new(item)
+         # puts item
+         #end
+        # users
+        #items
+    end
+
+
     # Returns the current Help Scout Client settings.
     # If no settings have been loaded yet, this function will load its 
     # configuration from helpscout.yml
@@ -150,6 +214,7 @@ module HelpScout
       end
 
       begin
+        #puts "request_url: #{request_url}"
         response = Client.get(request_url, {:basic_auth => auth})
       rescue SocketError => se
         raise StandardError, se.message
@@ -566,7 +631,7 @@ module HelpScout
     CONVERSATION_FILTER_STATUS_ALL = "all"
     CONVERSATION_FILTER_STATUS_PENDING = "pending"
 
-    def conversations(mailboxId, status, limit=0, modifiedSince)
+    def conversations(mailboxId, status, limit=0, modifiedSince, tag)
       url = "/mailboxes/#{mailboxId}/conversations.json"
 
       page = 1
@@ -582,6 +647,10 @@ module HelpScout
 
       if modifiedSince
         options["modifiedSince"] = modifiedSince
+      end
+
+      if tag
+        options["tag"] = URI.escape(tag.tag)
       end
 
       conversations = []
@@ -897,6 +966,7 @@ module HelpScout
       end
 
       url = "/customers.json"
+      params = JSON.parse(customer.to_json)
 
       begin
         item = Client.create_item(@auth, url, customer.to_json)
