@@ -35,6 +35,6 @@ customers = helpscout.customers
 To fetch active conversations:
 
 ```ruby
-conversations = helpscout.conversations(mailboxId, "active", nil)
+conversations = helpscout.conversations(mailboxId, "active", nil, tag)
 ```
 
